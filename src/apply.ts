@@ -70,7 +70,9 @@ export function countChanges(
   let count = 0
   for (const [key, newValue] of Object.entries(keysToWrite)) {
     const existing = config.get(key)
-    if (JSON.stringify(existing) !== JSON.stringify(newValue)) count++
+    const strategy = source.mergeStrategy ?? 'replace'
+    const merged = applyMerge(existing, newValue, strategy)
+    if (JSON.stringify(existing) !== JSON.stringify(merged)) count++
   }
   // Removed keys
   count += state.appliedKeys.filter(k => !Object.keys(keysToWrite).includes(k)).length
