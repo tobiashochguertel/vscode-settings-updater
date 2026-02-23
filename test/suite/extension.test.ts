@@ -29,7 +29,7 @@ async function activateExtension() {
     await ext.activate()
   }
   // Allow the extension's registerCommand() calls to propagate in the shared EH
-  await new Promise<void>(resolve => setTimeout(resolve, 500))
+  await new Promise<void>(resolve => setTimeout(resolve, 2000))
   return ext
 }
 
@@ -88,6 +88,7 @@ suite('Command Registration', () => {
   for (const cmd of REQUIRED_COMMANDS) {
     test(`command "${cmd}" is registered`, async () => {
       const all = await vscode.commands.getCommands(true)
+      console.log(`[E2E] Total commands: ${all.length}, settingsUpdater: ${all.filter(c => c.startsWith('settingsUpdater')).join(', ') || 'NONE'}`)
       assert.ok(all.includes(cmd), `Command not registered: ${cmd}`)
     })
   }
