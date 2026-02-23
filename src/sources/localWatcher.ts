@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 import type { ExtensionContext } from 'vscode'
-import { homedir } from 'node:os'
 import { getEnabledSources } from '../config'
 import { fetchAndApplySource } from '../lifecycle'
 import { log } from '../logger'
+import { resolveFilePath } from './pathResolver'
 
 const watchers: vscode.FileSystemWatcher[] = []
 
@@ -15,7 +15,7 @@ const watchers: vscode.FileSystemWatcher[] = []
 export function startLocalWatchers(ctx: ExtensionContext): void {
   const localSources = getEnabledSources().filter(s => s.file)
   for (const source of localSources) {
-    const expanded = source.file!.replace(/^~/, homedir())
+    const expanded = resolveFilePath(source.file!)
     // Use the exact file path as glob pattern for a single-file watcher
     const watcher = vscode.workspace.createFileSystemWatcher(
       expanded,
