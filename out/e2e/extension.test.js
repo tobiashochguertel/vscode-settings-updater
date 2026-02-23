@@ -61,10 +61,18 @@ async function activateExtension() {
     const deadline = Date.now() + 10_000;
     while (Date.now() < deadline) {
         const cmds = await vscode.commands.getCommands(true);
-        if (cmds.some(c => c.startsWith('settingsUpdater.')))
+        if (cmds.some(c => c.startsWith('settingsUpdater.'))) {
+            console.log('[E2E] settingsUpdater commands found in registry:', cmds.filter(c => c.startsWith('settingsUpdater.')));
             break;
+        }
         await new Promise(resolve => setTimeout(resolve, 200));
     }
+    // Diagnostic: print what state we're in
+    console.log('[E2E] ext.isActive:', ext.isActive);
+    const allCmds = await vscode.commands.getCommands(true);
+    console.log('[E2E] settingsUpdater commands in registry:', allCmds.filter(c => c.startsWith('settingsUpdater.')));
+    console.log('[E2E] total commands registered:', allCmds.length);
+    console.log('[E2E] all extensions:', vscode.extensions.all.map(e => `${e.id}(active=${e.isActive})`).join(', '));
     return ext;
 }
 // ---------------------------------------------------------------------------
