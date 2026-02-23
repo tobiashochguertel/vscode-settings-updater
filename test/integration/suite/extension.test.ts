@@ -56,3 +56,39 @@ suite('Command Invocation', () => {
     )
   })
 })
+
+suite('Source Management Commands', () => {
+  test('settingsUpdater.updateSource — does not throw with no sources', async () => {
+    // With no sources, shows info message instead of QuickPick
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.updateSource')
+    )
+  })
+
+  test('settingsUpdater.disableSource — does not throw with no sources', async () => {
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.disableSource')
+    )
+  })
+
+  test('settingsUpdater.enableSource — does not throw with no disabled sources', async () => {
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.enableSource')
+    )
+  })
+})
+
+suite('Extension Manifest', () => {
+  test('Extension has correct publisher and id', async () => {
+    const ext = vscode.extensions.getExtension('tobiashochguertel.vscode-settings-updater')
+    assert.ok(ext, 'Extension not found')
+    assert.strictEqual(ext.id, 'tobiashochguertel.vscode-settings-updater')
+  })
+
+  test('Extension package.json has non-empty version', async () => {
+    const ext = vscode.extensions.getExtension('tobiashochguertel.vscode-settings-updater')
+    assert.ok(ext, 'Extension not found')
+    const pkg = ext.packageJSON as { version: string }
+    assert.ok(pkg.version && pkg.version !== '', 'Version should be non-empty')
+  })
+})

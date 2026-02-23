@@ -146,6 +146,7 @@
     "format": "prettier --write src",
     "test": "vitest run",
     "test:integration": "node dist/test/integration/runTests.js",
+    "test:e2e": "node dist/test/integration/runTests.js",
     "package": "vsce package",
     "publish": "vsce publish"
   },

@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,5 +31,35 @@ jobs:
       - name: Lint
         run: pnpm lint || true   # non-blocking during initial development
 
-      - name: Test
+      - name: Unit Tests
         run: pnpm test
+
+  e2e-tests:
+    name: E2E / Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (including test runner)
+        run: pnpm build
+
+      - name: Install xvfb (headless display for VS Code)
+        run: sudo apt-get install -y xvfb
+
+      - name: E2E Tests (headless)
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1280x960x24' pnpm test:integration
+        env:
+          # Prevent VS Code from trying to open a window in CI
+          DISPLAY: ':99'
