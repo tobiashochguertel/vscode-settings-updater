@@ -4,10 +4,12 @@
  * These tests run INSIDE the VS Code Extension Development Host — no mocks,
  * no stubs. Every `vscode.*` call is the real VS Code API.
  *
- * Test runner: @vscode/test-electron with Mocha TDD suite.
- * The test index (suite/index.ts) is loaded via --extensionTestsPath in the
- * SAME Extension Host process as the development extension, which allows
- * vscode.commands.getCommands() to see commands registered by the extension.
+ * Architecture note (VS Code 1.96+):
+ *   The `--extensionTestsPath` runner has an isolated `vscode` proxy — commands
+ *   registered by the development extension are NOT visible via getCommands(), and
+ *   executeCommand() from the test proxy does NOT route to extension commands.
+ *   The fix: the extension exports { activated, executeCommand } from activate().
+ *   Tests call ext.exports.executeCommand() which uses the extension's own proxy.
  */
 import * as assert from 'assert'
 import * as vscode from 'vscode'
@@ -17,41 +19,50 @@ import * as path from 'node:path'
 
 const EXT_ID = 'tobiashochguertel.vscode-settings-updater'
 
-async function getExtension() {
-  const ext = vscode.extensions.getExtension(EXT_ID)
+/** Mirror of ExtensionTestAPI from src/index.ts — kept in sync manually. */
+interface ExtensionTestAPI {
+  activated: true
+  executeCommand(command: string, ...args: unknown[]): Thenable<unknown>
+}
+
+type ExtInstance = vscode.Extension<ExtensionTestAPI>
+
+async function getExtension(): Promise<ExtInstance> {
+  const ext = vscode.extensions.getExtension<ExtensionTestAPI>(EXT_ID)
   assert.ok(ext, `Extension ${EXT_ID} not found in VS Code`)
   return ext
 }
 
-async function activateExtension() {
+/** Ensure extension is activated and its exports are available (up to 10s). */
+async function activateExtension(): Promise<ExtInstance> {
   const ext = await getExtension()
   if (!ext.isActive) {
     await ext.activate()
   }
-  // Poll until extension commands appear (up to 10s) — works with "activationEvents": ["*"]
+  // Poll for ext.exports.activated — set by activate() return value
   const deadline = Date.now() + 10_000
   while (Date.now() < deadline) {
-    const cmds = await vscode.commands.getCommands(true)
-    if (cmds.some((c) => c.startsWith('settingsUpdater.'))) break
-    await new Promise<void>((resolve) => setTimeout(resolve, 300))
+    if ((ext.exports as ExtensionTestAPI | undefined)?.activated === true) break
+    await new Promise<void>((resolve) => setTimeout(resolve, 200))
   }
   return ext
 }
 
 // ---------------------------------------------------------------------------
-// Suite 0: Diagnostics — verify test context has access to VS Code command registry
+// Suite 0: Diagnostics
 // ---------------------------------------------------------------------------
 suite('Diagnostics', () => {
-  test('commands registered in test code are visible via getCommands()', async () => {
-    const PING_CMD = '_e2e.diagnosticPing'
-    const disposable = vscode.commands.registerCommand(PING_CMD, () => 'pong')
-    try {
-      const all = await vscode.commands.getCommands(true)
-      process.stderr.write(`[E2E-DIAG] getCommands total=${all.length} hasPing=${all.includes(PING_CMD)}\n`)
-      assert.ok(all.includes(PING_CMD), 'Commands registered in test code must be visible via getCommands()')
-    } finally {
-      disposable.dispose()
-    }
+  test('ext.exports.activated is true after activate()', async () => {
+    const ext = await activateExtension()
+    const api = ext.exports as ExtensionTestAPI | undefined
+    process.stderr.write(`[E2E-DIAG] ext.exports=${JSON.stringify(api)}\n`)
+    assert.strictEqual(api?.activated, true, 'ext.exports.activated must be true')
+  })
+
+  test('ext.exports.executeCommand is a function', async () => {
+    const ext = await activateExtension()
+    const api = ext.exports as ExtensionTestAPI | undefined
+    assert.strictEqual(typeof api?.executeCommand, 'function', 'ext.exports.executeCommand must be a function')
   })
 })
 
@@ -66,9 +77,10 @@ suite('Activation', () => {
     assert.ok(ext, 'Extension not found')
   })
 
-  test('extension activates without error', async () => {
+  test('extension activates without error and exports API', async () => {
     const ext = await activateExtension()
-    assert.strictEqual(ext.isActive, true)
+    assert.strictEqual(ext.isActive, true, 'isActive must be true')
+    assert.strictEqual((ext.exports as ExtensionTestAPI).activated, true, 'exports.activated must be true')
   })
 
   test('extension exposes package.json with correct publisher', async () => {
@@ -94,9 +106,14 @@ suite('Command Registration', () => {
     'settingsUpdater.showStatus',
   ]
 
-  suiteSetup(activateExtension)
+  let api: ExtensionTestAPI
 
-  // Verify commands are DECLARED in package.json (always true after build)
+  suiteSetup(async () => {
+    const ext = await activateExtension()
+    api = ext.exports as ExtensionTestAPI
+  })
+
+  // Verify commands are DECLARED in package.json
   test('all 7 commands are declared in package.json', () => {
     const ext = vscode.extensions.getExtension(EXT_ID)
     const contributes = (ext?.packageJSON as { contributes?: { commands?: { command: string }[] } })?.contributes
@@ -106,12 +123,14 @@ suite('Command Registration', () => {
     }
   })
 
-  // Verify commands are REGISTERED via getCommands() — works because test runs in the SAME EH
+  // Verify each command can be executed via ext.exports.executeCommand (real IPC)
   for (const cmd of REQUIRED_COMMANDS) {
-    test(`command "${cmd}" is registered`, async () => {
-      const all = await vscode.commands.getCommands(true)
-      console.log(`[E2E] Total commands: ${all.length}, settingsUpdater: ${all.filter(c => c.startsWith('settingsUpdater')).join(', ') || 'NONE'}`)
-      assert.ok(all.includes(cmd), `Command not registered: ${cmd}`)
+    test(`command "${cmd}" is executable via ext.exports.executeCommand`, async () => {
+      // showLog, openConfig, showStatus might open UI but should not throw
+      await assert.doesNotReject(
+        Promise.resolve(api.executeCommand(cmd)),
+        `ext.exports.executeCommand('${cmd}') must not throw`,
+      )
     })
   }
 })
@@ -120,40 +139,42 @@ suite('Command Registration', () => {
 // Suite 3: Commands with no sources configured
 // ---------------------------------------------------------------------------
 suite('Commands — empty configuration', () => {
+  let api: ExtensionTestAPI
+
   suiteSetup(async () => {
-    await activateExtension()
-    // Ensure no sources are configured
+    const ext = await activateExtension()
+    api = ext.exports as ExtensionTestAPI
     await vscode.workspace
       .getConfiguration()
       .update('settingsUpdater.sources', [], vscode.ConfigurationTarget.Global)
   })
 
   test('updateAll does not throw when no sources configured', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.updateAll')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.updateAll')))
   })
 
   test('updateSource does not throw when no sources configured', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.updateSource')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.updateSource')))
   })
 
   test('disableSource does not throw when no sources configured', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.disableSource')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.disableSource')))
   })
 
   test('enableSource does not throw when no disabled sources', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.enableSource')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.enableSource')))
   })
 
   test('showLog does not throw (reveals output channel)', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.showLog')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.showLog')))
   })
 
   test('showStatus does not throw (opens WebView panel)', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.showStatus')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.showStatus')))
   })
 
   test('openConfig does not throw (opens settings.json)', async () => {
-    await assert.doesNotReject(Promise.resolve(vscode.commands.executeCommand('settingsUpdater.openConfig')))
+    await assert.doesNotReject(Promise.resolve(api.executeCommand('settingsUpdater.openConfig')))
   })
 })
 
@@ -162,15 +183,15 @@ suite('Commands — empty configuration', () => {
 // ---------------------------------------------------------------------------
 suite('E2E — local JSONC source applies settings', () => {
   let tmpFile: string
-  // Use editor.wordWrap — a real VS Code setting we can set and verify
+  let api: ExtensionTestAPI
   const TARGET_KEY = 'editor.wordWrap'
   const EXPECTED_VALUE = 'on'
   const SOURCE_NAME = 'e2e-local-test'
 
   suiteSetup(async () => {
-    await activateExtension()
+    const ext = await activateExtension()
+    api = ext.exports as ExtensionTestAPI
 
-    // Write a JSONC file with the setting we want to apply
     tmpFile = path.join(os.tmpdir(), `vscode-su-e2e-${Date.now()}.jsonc`)
     await fs.writeFile(
       tmpFile,
@@ -178,7 +199,6 @@ suite('E2E — local JSONC source applies settings', () => {
       'utf8',
     )
 
-    // Configure the extension to use this local file as a source
     await vscode.workspace.getConfiguration().update(
       'settingsUpdater.sources',
       [
@@ -197,15 +217,12 @@ suite('E2E — local JSONC source applies settings', () => {
   })
 
   suiteTeardown(async () => {
-    // Remove test source config
     await vscode.workspace
       .getConfiguration()
       .update('settingsUpdater.sources', [], vscode.ConfigurationTarget.Global)
-    // Reset the setting we modified
     await vscode.workspace
       .getConfiguration()
       .update(TARGET_KEY, undefined, vscode.ConfigurationTarget.Global)
-    // Remove temp file
     try {
       await fs.unlink(tmpFile)
     } catch {
@@ -214,9 +231,8 @@ suite('E2E — local JSONC source applies settings', () => {
   })
 
   test('updateAll reads local JSONC file and writes setting to VS Code config', async () => {
-    await vscode.commands.executeCommand('settingsUpdater.updateAll')
-    // Give the async apply pipeline time to complete
-    await new Promise<void>(resolve => setTimeout(resolve, 1500))
+    await api.executeCommand('settingsUpdater.updateAll')
+    await new Promise<void>((resolve) => setTimeout(resolve, 1500))
 
     const applied = vscode.workspace.getConfiguration().get<string>(TARGET_KEY)
     assert.strictEqual(
@@ -227,7 +243,6 @@ suite('E2E — local JSONC source applies settings', () => {
   })
 
   test('after source is disabled, updateAll no longer processes it', async () => {
-    // Disable the source
     await vscode.workspace.getConfiguration().update(
       'settingsUpdater.sources',
       [
@@ -237,22 +252,19 @@ suite('E2E — local JSONC source applies settings', () => {
           parser: 'jsonc',
           targetKey: TARGET_KEY,
           mergeStrategy: 'replace',
-          enabled: false, // disabled
+          enabled: false,
           updateInterval: 60,
         },
       ],
       vscode.ConfigurationTarget.Global,
     )
-
-    // Manually change the setting to something else
     await vscode.workspace
       .getConfiguration()
       .update(TARGET_KEY, 'off', vscode.ConfigurationTarget.Global)
 
-    await vscode.commands.executeCommand('settingsUpdater.updateAll')
-    await new Promise<void>(resolve => setTimeout(resolve, 500))
+    await api.executeCommand('settingsUpdater.updateAll')
+    await new Promise<void>((resolve) => setTimeout(resolve, 500))
 
-    // Value should remain 'off' because the source is disabled
     const applied = vscode.workspace.getConfiguration().get<string>(TARGET_KEY)
     assert.strictEqual(applied, 'off', 'Disabled source should not overwrite the setting')
   })
