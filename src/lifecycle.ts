@@ -6,11 +6,7 @@ import { log } from './logger'
 import { GLOBAL_STATE_INIT_KEY } from './constants'
 import { setIdle } from './statusBar'
 import type { Source } from './sources/types'
-import { RemoteSourceReader } from './sources/RemoteSourceReader'
-import { LocalFileSourceReader } from './sources/LocalFileSourceReader'
-import { ParserRegistry } from './parsers/ParserRegistry'
-import { MergeStrategyRegistry } from './strategies/MergeStrategyRegistry'
-import { UpdateOrchestrator } from './UpdateOrchestrator'
+import { createProductionServices } from './ServiceContainer'
 
 const pollingTimers: NodeJS.Timeout[] = []
 
@@ -55,11 +51,6 @@ export async function fetchAndApplySource(
   source: Source,
   prompt: boolean,
 ): Promise<void> {
-  const orchestrator = new UpdateOrchestrator(
-    [new RemoteSourceReader(), new LocalFileSourceReader()],
-    new ParserRegistry(),
-    new MergeStrategyRegistry(),
-    ctx,
-  )
+  const { orchestrator } = createProductionServices(ctx)
   return orchestrator.runForSource(source, prompt)
 }
