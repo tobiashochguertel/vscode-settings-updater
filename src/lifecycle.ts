@@ -1,16 +1,16 @@
 import * as vscode from 'vscode'
 import type { ExtensionContext } from 'vscode'
-import { homedir } from 'node:os'
-import { getEnabledSources, getDefaultParser, getGlobalUpdateInterval } from './config'
-import { resolveUrl } from './sources/resolver'
-import { fetchRaw, hashContent } from './sources/fetcher'
-import { parseContent } from './sources/parser'
+import { getEnabledSources, getGlobalUpdateInterval } from './config'
 import { getSourceState, saveSourceState } from './state'
-import { applySource, countChanges } from './apply'
 import { log } from './logger'
 import { GLOBAL_STATE_INIT_KEY } from './constants'
-import { setUpdating, setIdle, setError } from './statusBar'
+import { setIdle } from './statusBar'
 import type { Source } from './sources/types'
+import { RemoteSourceReader } from './sources/RemoteSourceReader'
+import { LocalFileSourceReader } from './sources/LocalFileSourceReader'
+import { ParserRegistry } from './parsers/ParserRegistry'
+import { MergeStrategyRegistry } from './strategies/MergeStrategyRegistry'
+import { UpdateOrchestrator } from './UpdateOrchestrator'
 
 const pollingTimers: NodeJS.Timeout[] = []
 
@@ -55,65 +55,11 @@ export async function fetchAndApplySource(
   source: Source,
   prompt: boolean,
 ): Promise<void> {
-  try {
-    let raw: string
-    let contentHash: string
-    setUpdating(source.name)
-
-    if (source.url) {
-      const resolvedUrl = resolveUrl(source.url)
-      log.info(`[${source.name}] Fetching ${resolvedUrl}`)
-      raw = await fetchRaw(resolvedUrl)
-      contentHash = hashContent(raw)
-      const state = getSourceState(ctx, source.name)
-      if (contentHash === state.lastContentHash) {
-        log.info(`[${source.name}] No change detected, skipping`)
-        saveSourceState(ctx, source.name, { ...state, lastFetchAt: Date.now() })
-        setIdle()
-        return
-      }
-    } else if (source.file) {
-      const expanded = source.file.replace(/^~/, homedir())
-      const uri = vscode.Uri.file(expanded)
-      const bytes = await vscode.workspace.fs.readFile(uri)
-      raw = new TextDecoder().decode(bytes)
-      contentHash = hashContent(raw)
-    } else {
-      log.warn(`[${source.name}] Source has neither url nor file — skipping`)
-      return
-    }
-
-    const parser = source.parser ?? getDefaultParser()
-    const parsed = parseContent(raw, parser)
-    const changeCount = countChanges(ctx, source, parsed)
-
-    if (changeCount === 0) {
-      log.info(`[${source.name}] Settings already up-to-date`)
-      setIdle()
-      return
-    }
-
-    if (prompt) {
-      const action = await vscode.window.showInformationMessage(
-        `[Settings Updater] "${source.name}": ${changeCount} setting${changeCount !== 1 ? 's' : ''} will change.`,
-        'Update',
-        'Skip this time',
-      )
-      if (action !== 'Update') {
-        log.info(`[${source.name}] User skipped update`)
-        setIdle()
-        return
-      }
-    }
-
-    const result = await applySource(ctx, source, parsed, contentHash)
-    log.info(`[${source.name}] Applied: ${result.keysWritten.length} written, ${result.keysRemoved.length} removed`)
-    setIdle()
-    vscode.window.showInformationMessage(`[Settings Updater] "${source.name}" updated successfully.`)
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    log.error(`[${source.name}] Error: ${msg}`)
-    setError(msg)
-    vscode.window.showWarningMessage(`[Settings Updater] "${source.name}" failed: ${msg}`)
-  }
+  const orchestrator = new UpdateOrchestrator(
+    [new RemoteSourceReader(), new LocalFileSourceReader()],
+    new ParserRegistry(),
+    new MergeStrategyRegistry(),
+    ctx,
+  )
+  return orchestrator.runForSource(source, prompt)
 }
