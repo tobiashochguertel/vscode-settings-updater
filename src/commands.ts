@@ -96,41 +96,95 @@ export function registerCommands(ctx: ExtensionContext): void {
     // ---- openConfig ----
     vscode.commands.registerCommand('settingsUpdater.openConfig', async () => {
       await vscode.commands.executeCommand('workbench.action.openSettingsJson')
+      // Give VS Code a moment to open the document before trying to reveal
+      await new Promise(resolve => setTimeout(resolve, 200))
+      const editor = vscode.window.activeTextEditor
+      if (!editor) return
+      const text = editor.document.getText()
+      const idx = text.indexOf('"settingsUpdater')
+      if (idx === -1) return
+      const pos = editor.document.positionAt(idx)
+      editor.selection = new vscode.Selection(pos, pos)
+      editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter)
     }),
 
     // ---- showStatus ----
     vscode.commands.registerCommand('settingsUpdater.showStatus', async () => {
       const allSources = getConfig<Source[]>(`${CONFIG_NAMESPACE}.sources`) ?? []
-      if (allSources.length === 0) {
-        vscode.window.showInformationMessage(
-          '[Settings Updater] No sources configured. Use "Open extension configuration" to add sources.',
-        )
-        return
-      }
 
-      const items = allSources.map(s => {
-        const enabled = s.enabled !== false
-        const state = getSourceState(ctx, s.name)
-        const lastChecked = state.lastFetchAt
-          ? new Date(state.lastFetchAt).toLocaleString()
-          : 'never'
-        const keysManaged = state.appliedKeys.length
+      const panel = vscode.window.createWebviewPanel(
+        'settingsUpdaterStatus',
+        'Settings Updater: Source Status',
+        vscode.ViewColumn.One,
+        { enableScripts: false },
+      )
 
-        const icon = !enabled ? '⏸' : keysManaged > 0 ? '✅' : '⬜'
-        return {
-          label: `${icon} ${s.name}`,
-          description: enabled ? `${keysManaged} key(s) managed` : 'disabled',
-          detail: `Last checked: ${lastChecked}  |  Source: ${s.url ?? s.file ?? 'unknown'}`,
-        }
-      })
-
-      await vscode.window.showQuickPick(items, {
-        placeHolder: 'Source status overview (read-only)',
-        title: 'Settings Updater: Source Status',
-        canPickMany: false,
-      })
+      panel.webview.html = buildStatusHtml(ctx, allSources)
     }),
   )
+}
+
+// ---------------------------------------------------------------------------
+// Helper: build HTML for the status WebView panel
+// ---------------------------------------------------------------------------
+
+function buildStatusHtml(ctx: ExtensionContext, sources: Source[]): string {
+  const rows = sources.map(s => {
+    const enabled = s.enabled !== false
+    const state = getSourceState(ctx, s.name)
+    const lastChecked = state.lastFetchAt
+      ? new Date(state.lastFetchAt).toLocaleString()
+      : 'never'
+    const keysManaged = state.appliedKeys.length
+    const icon = !enabled ? '⏸' : keysManaged > 0 ? '✅' : '⬜'
+    const status = !enabled ? 'disabled' : keysManaged > 0 ? 'active' : 'pending'
+    const sourceRef = s.url ?? s.file ?? 'unknown'
+    return `<tr>
+      <td>${icon} ${escHtml(s.name)}</td>
+      <td>${escHtml(status)}</td>
+      <td>${escHtml(lastChecked)}</td>
+      <td>${keysManaged}</td>
+      <td><code>${escHtml(sourceRef)}</code></td>
+    </tr>`
+  }).join('\n')
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings Updater: Source Status</title>
+<style>
+  body { background: #1e1e2e; color: #cdd6f4; font-family: sans-serif; padding: 1rem; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #45475a; padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: #313244; }
+  tr:nth-child(even) { background: #181825; }
+  code { font-size: 0.9em; }
+</style>
+</head>
+<body>
+<h2>Settings Updater — Source Status</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Source Name</th>
+      <th>Status</th>
+      <th>Last Checked</th>
+      <th>Keys Managed</th>
+      <th>Source URL/File</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${rows}
+  </tbody>
+</table>
+</body>
+</html>`
+}
+
+function escHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 // ---------------------------------------------------------------------------

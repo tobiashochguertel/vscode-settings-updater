@@ -15,10 +15,6 @@ export function startLocalWatchers(ctx: ExtensionContext): void {
   const localSources = getEnabledSources().filter(s => s.file)
   for (const source of localSources) {
     const expanded = source.file!.replace(/^~/, require('node:os').homedir())
-    const pattern = new vscode.RelativePattern(
-      vscode.Uri.file(expanded),
-      '*',  // watch the file itself (single-file glob)
-    )
     // Use the exact file path as glob pattern for a single-file watcher
     const watcher = vscode.workspace.createFileSystemWatcher(
       expanded,

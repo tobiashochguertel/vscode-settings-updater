@@ -43,3 +43,13 @@ tasks:
     desc: "Install .vsix into local VS Code"
     cmds:
       - code --install-extension *.vsix
+
+  debug:
+    desc: "Launch VS Code Extension Host for debugging (requires 'code' CLI in PATH)"
+    cmds:
+      - code --extensionDevelopmentPath={{.ROOT_DIR}} --new-window
+
+  publish:
+    desc: "Publish extension to VS Code Marketplace (requires VSCE_PAT env var)"
+    cmds:
+      - pnpm publish
