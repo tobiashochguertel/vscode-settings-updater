@@ -21,9 +21,10 @@ async function forceActivateExtension(): Promise<void> {
     return
   }
 
-  // If activate() already ran (ext.exports has our API), nothing to do
+  // If activate() already ran (ext.exports has our API), store it and return
   if ((ext.exports as { activated?: true } | undefined)?.activated === true) {
-    process.stderr.write('[E2E] Extension already activated\n')
+    process.stderr.write('[E2E] Extension already activated — storing ext.exports as _e2eExtApi\n')
+    ;(globalThis as Record<string, unknown>)._e2eExtApi = ext.exports
     return
   }
 

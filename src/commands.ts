@@ -17,7 +17,7 @@ export function registerCommands(ctx: ExtensionContext): void {
         return
       }
       for (const source of sources) {
-        await fetchAndApplySource(ctx, source, true)
+        await fetchAndApplySource(ctx, source, false)
       }
     }),
 
