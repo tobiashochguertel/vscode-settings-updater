@@ -7,16 +7,16 @@ import { startLocalWatchers, stopLocalWatchers } from './sources/localWatcher'
 import { EXTENSION_ID } from './constants'
 
 export async function activate(ctx: ExtensionContext): Promise<void> {
-  console.log('[vscode-settings-updater] activate() starting')
+  process.stderr.write('[vscode-settings-updater] activate() starting\n')
   log.info(`${EXTENSION_ID} activating`)
   createStatusBar()
   registerCommands(ctx)
-  console.log('[vscode-settings-updater] registerCommands() done')
+  process.stderr.write('[vscode-settings-updater] registerCommands() done\n')
   startLocalWatchers(ctx)
   await runStartupCheck(ctx)
   startPolling(ctx)
   log.info(`${EXTENSION_ID} activated`)
-  console.log('[vscode-settings-updater] activate() complete')
+  process.stderr.write('[vscode-settings-updater] activate() complete\n')
 }
 
 export function deactivate(): void {

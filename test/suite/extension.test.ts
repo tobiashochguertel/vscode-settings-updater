@@ -28,10 +28,32 @@ async function activateExtension() {
   if (!ext.isActive) {
     await ext.activate()
   }
-  // Allow the extension's registerCommand() calls to propagate in the shared EH
-  await new Promise<void>(resolve => setTimeout(resolve, 2000))
+  // Poll until extension commands appear (up to 10s) — works with "activationEvents": ["*"]
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    const cmds = await vscode.commands.getCommands(true)
+    if (cmds.some((c) => c.startsWith('settingsUpdater.'))) break
+    await new Promise<void>((resolve) => setTimeout(resolve, 300))
+  }
   return ext
 }
+
+// ---------------------------------------------------------------------------
+// Suite 0: Diagnostics — verify test context has access to VS Code command registry
+// ---------------------------------------------------------------------------
+suite('Diagnostics', () => {
+  test('commands registered in test code are visible via getCommands()', async () => {
+    const PING_CMD = '_e2e.diagnosticPing'
+    const disposable = vscode.commands.registerCommand(PING_CMD, () => 'pong')
+    try {
+      const all = await vscode.commands.getCommands(true)
+      process.stderr.write(`[E2E-DIAG] getCommands total=${all.length} hasPing=${all.includes(PING_CMD)}\n`)
+      assert.ok(all.includes(PING_CMD), 'Commands registered in test code must be visible via getCommands()')
+    } finally {
+      disposable.dispose()
+    }
+  })
+})
 
 // ---------------------------------------------------------------------------
 // Suite 1: Activation
