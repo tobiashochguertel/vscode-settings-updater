@@ -26,3 +26,33 @@ suite('Extension Integration Tests', () => {
     }
   })
 })
+
+suite('Command Invocation', () => {
+  test('settingsUpdater.showLog — does not throw', async () => {
+    // This command shows the output channel, should always succeed
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.showLog')
+    )
+  })
+
+  test('settingsUpdater.showStatus — does not throw', async () => {
+    // Opens WebView panel with source status
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.showStatus')
+    )
+  })
+
+  test('settingsUpdater.openConfig — does not throw', async () => {
+    // Opens settings.json in the editor
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.openConfig')
+    )
+  })
+
+  test('settingsUpdater.updateAll — does not throw with empty sources config', async () => {
+    // With no sources configured, updateAll should show info message not throw
+    await assert.doesNotReject(
+      vscode.commands.executeCommand('settingsUpdater.updateAll')
+    )
+  })
+})
