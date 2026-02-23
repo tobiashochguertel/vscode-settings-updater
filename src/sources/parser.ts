@@ -28,3 +28,8 @@ function parseJsoncString(raw: string): ParsedSettings {
   const cleaned = stripComments(raw)
   return JSON.parse(cleaned) as ParsedSettings
 }
+
+// These are now implemented as proper strategy classes:
+export { JsoncBlockParser } from '../parsers/JsoncBlockParser'
+export { JsoncFileParser } from '../parsers/JsoncFileParser'
+export { ParserRegistry } from '../parsers/ParserRegistry'
