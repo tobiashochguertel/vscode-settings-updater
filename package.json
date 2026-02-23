@@ -155,10 +155,10 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src",
     "test": "vitest run",
-    "test:e2e": "tsc -p tsconfig.e2e.json && vscode-test",
+    "test:e2e": "tsc -p tsconfig.test.json && node ./out/test/runTests.js",
     "package": "vsce package",
     "publish": "vsce publish",
-    "test:e2e:watch": "vscode-test --watch"
+    "test:e2e:watch": "tsc -p tsconfig.test.json --watch"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

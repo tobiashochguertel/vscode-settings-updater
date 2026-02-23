@@ -2,15 +2,15 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2022",
-    "lib": ["ES2022"],
-    "outDir": "out/e2e",
-    "rootDir": "test/e2e",
+    "outDir": "out/test",
+    "rootDir": "test",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "lib": ["ES2022"],
+    "types": ["mocha", "node"]
   },
-  "include": ["test/e2e/**/*"],
+  "include": ["test/suite/**/*.ts", "test/runTests.ts"],
   "exclude": ["node_modules"]
 }

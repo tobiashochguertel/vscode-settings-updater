@@ -4,7 +4,10 @@
  * These tests run INSIDE the VS Code Extension Development Host — no mocks,
  * no stubs. Every `vscode.*` call is the real VS Code API.
  *
- * Test runner: @vscode/test-cli (vscode-test CLI) via Mocha TDD suite.
+ * Test runner: @vscode/test-electron with Mocha TDD suite.
+ * The test index (suite/index.ts) is loaded via --extensionTestsPath in the
+ * SAME Extension Host process as the development extension, which allows
+ * vscode.commands.getCommands() to see commands registered by the extension.
  */
 import * as assert from 'assert'
 import * as vscode from 'vscode'
@@ -25,7 +28,7 @@ async function activateExtension() {
   if (!ext.isActive) {
     await ext.activate()
   }
-  // Small delay for VS Code IPC to propagate command registrations
+  // Allow the extension's registerCommand() calls to propagate in the shared EH
   await new Promise<void>(resolve => setTimeout(resolve, 500))
   return ext
 }
@@ -81,23 +84,11 @@ suite('Command Registration', () => {
     }
   })
 
-  // Verify commands are REGISTERED by executing them; "command not found" = not registered.
-  // Other errors (e.g., no sources, QuickPick) mean the command IS registered and running.
+  // Verify commands are REGISTERED via getCommands() — works because test runs in the SAME EH
   for (const cmd of REQUIRED_COMMANDS) {
-    test(`command "${cmd}" responds (is registered)`, async () => {
-      try {
-        await vscode.commands.executeCommand(cmd)
-        // Succeeded — command is registered
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err)
-        // "command '...' not found" means it was never registered
-        assert.ok(
-          !msg.includes('not found'),
-          `Command not registered: ${cmd}\n  error: ${msg}`,
-        )
-        // Any OTHER error means the command IS registered but execution failed
-        // (expected in tests — e.g. QuickPick cancelled, no sources, etc.)
-      }
+    test(`command "${cmd}" is registered`, async () => {
+      const all = await vscode.commands.getCommands(true)
+      assert.ok(all.includes(cmd), `Command not registered: ${cmd}`)
     })
   }
 })
