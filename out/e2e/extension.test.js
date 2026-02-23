@@ -57,12 +57,21 @@ async function activateExtension() {
     if (!ext.isActive) {
         await ext.activate();
     }
+    // Wait for commands to be registered in VS Code's command registry (may be async)
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+        const cmds = await vscode.commands.getCommands(true);
+        if (cmds.some(c => c.startsWith('settingsUpdater.')))
+            break;
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
     return ext;
 }
 // ---------------------------------------------------------------------------
 // Suite 1: Activation
 // ---------------------------------------------------------------------------
 suite('Activation', () => {
+    suiteSetup(activateExtension);
     test('extension is registered in VS Code', async () => {
         const ext = await getExtension();
         assert.ok(ext, 'Extension not found');
