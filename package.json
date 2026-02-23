@@ -9,8 +9,15 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "icon": "assets/icon.png",
+  "galleryBanner": { "color": "#1e1e2e", "theme": "dark" },
+  "keywords": ["settings", "sync", "updater", "jsonc", "file-nesting", "configuration"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/index.js",
   "contributes": {
     "commands": [
@@ -61,7 +68,10 @@
         },
         "settingsUpdater.defaultParser": {
           "type": "string",
-          "enum": ["jsonc-block", "jsonc-file"],
+          "enum": [
+            "jsonc-block",
+            "jsonc-file"
+          ],
           "default": "jsonc-block",
           "markdownDescription": "Global default parser strategy.\n- `jsonc-block`: extract first ` ```jsonc ` code fence from a Markdown file (compatible with antfu/vscode-file-nesting-config)\n- `jsonc-file`: treat the file as a raw JSONC/JSON settings object"
         },
@@ -76,7 +86,9 @@
           "markdownDescription": "Ordered list of settings sources. Sources are applied in array order — later sources override earlier ones for the same key.",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
               "name": {
                 "type": "string",
@@ -97,7 +109,10 @@
               },
               "parser": {
                 "type": "string",
-                "enum": ["jsonc-block", "jsonc-file"],
+                "enum": [
+                  "jsonc-block",
+                  "jsonc-file"
+                ],
                 "description": "Parser for this source. Overrides settingsUpdater.defaultParser."
               },
               "targetKey": {
@@ -106,7 +121,11 @@
               },
               "mergeStrategy": {
                 "type": "string",
-                "enum": ["replace", "merge-deep", "merge-shallow"],
+                "enum": [
+                  "replace",
+                  "merge-deep",
+                  "merge-shallow"
+                ],
                 "default": "replace",
                 "markdownDescription": "How to merge the source value with existing settings:\n- `replace`: completely replace the existing value\n- `merge-deep`: recursively merge objects, concatenate arrays\n- `merge-shallow`: merge top-level keys only, preserve existing sub-keys"
               },
@@ -126,23 +145,28 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src",
     "test": "vitest run",
+    "test:integration": "node dist/test/integration/runTests.js",
     "package": "vsce package",
     "publish": "vsce publish"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^7",
     "@typescript-eslint/parser": "^7",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3",
+    "esbuild": "^0.24",
     "eslint": "^9",
+    "glob": "^13.0.6",
+    "mocha": "^11.7.5",
     "prettier": "^3",
     "typescript": "^5",
-    "vitest": "^2",
-    "esbuild": "^0.24"
+    "vitest": "^2"
   },
   "dependencies": {
-    "ofetch": "^1",
-    "jsonc-parser": "^3"
+    "jsonc-parser": "^3",
+    "ofetch": "^1"
   }
 }

@@ -1,0 +1,15 @@
+.vscode/**
+docs/**
+test/**
+fixtures/**
+src/**
+*.mjs
+*.config.*
+tsconfig.json
+.eslintrc*
+eslint.config*
+.prettierrc*
+Taskfile.yml
+pnpm-lock.yaml
+node_modules/**
+.gitignore
