@@ -1,0 +1,45 @@
+version: "3"
+
+vars:
+  REPO: "tobiashochguertel/vscode-settings-updater"
+
+tasks:
+  default:
+    desc: "List all tasks"
+    cmds:
+      - task --list
+
+  build:
+    desc: "Build extension with esbuild"
+    cmds:
+      - pnpm build
+
+  watch:
+    desc: "Watch mode — rebuild on change"
+    cmds:
+      - pnpm watch
+
+  lint:
+    desc: "Run ESLint"
+    cmds:
+      - pnpm lint
+
+  format:
+    desc: "Run Prettier"
+    cmds:
+      - pnpm format
+
+  test:
+    desc: "Run Vitest unit tests"
+    cmds:
+      - pnpm test
+
+  package:
+    desc: "Create .vsix package"
+    cmds:
+      - pnpm package
+
+  install-local:
+    desc: "Install .vsix into local VS Code"
+    cmds:
+      - code --install-extension *.vsix

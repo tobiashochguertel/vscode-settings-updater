@@ -1,0 +1,148 @@
+{
+  "name": "vscode-settings-updater",
+  "displayName": "VS Code Settings Updater",
+  "description": "Sync settings.json keys from local jsonc files or Git repos, with configurable merge strategies",
+  "version": "0.1.0",
+  "publisher": "tobiashochguertel",
+  "preview": true,
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/index.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "settingsUpdater.updateAll",
+        "title": "Update all sources now",
+        "category": "Settings Updater"
+      },
+      {
+        "command": "settingsUpdater.updateSource",
+        "title": "Update source…",
+        "category": "Settings Updater"
+      },
+      {
+        "command": "settingsUpdater.disableSource",
+        "title": "Disable source…",
+        "category": "Settings Updater"
+      },
+      {
+        "command": "settingsUpdater.enableSource",
+        "title": "Enable source…",
+        "category": "Settings Updater"
+      },
+      {
+        "command": "settingsUpdater.showLog",
+        "title": "Show update log",
+        "category": "Settings Updater"
+      },
+      {
+        "command": "settingsUpdater.openConfig",
+        "title": "Open extension configuration",
+        "category": "Settings Updater"
+      },
+      {
+        "command": "settingsUpdater.showStatus",
+        "title": "Show source status",
+        "category": "Settings Updater"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Settings Updater",
+      "properties": {
+        "settingsUpdater.autoUpdateInterval": {
+          "type": "number",
+          "default": 720,
+          "description": "Global default interval for checking remote sources for updates, in minutes. Default: 720 (12 hours)."
+        },
+        "settingsUpdater.defaultParser": {
+          "type": "string",
+          "enum": ["jsonc-block", "jsonc-file"],
+          "default": "jsonc-block",
+          "markdownDescription": "Global default parser strategy.\n- `jsonc-block`: extract first ` ```jsonc ` code fence from a Markdown file (compatible with antfu/vscode-file-nesting-config)\n- `jsonc-file`: treat the file as a raw JSONC/JSON settings object"
+        },
+        "settingsUpdater.giteaBaseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL for self-hosted Gitea/Forgejo instances. Required when using gitea: URL shorthand. Example: https://mygitea.example.com"
+        },
+        "settingsUpdater.sources": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Ordered list of settings sources. Sources are applied in array order — later sources override earlier ones for the same key.",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Human-readable name shown in prompts and logs."
+              },
+              "enabled": {
+                "type": "boolean",
+                "default": true,
+                "description": "Whether this source is active."
+              },
+              "url": {
+                "type": "string",
+                "markdownDescription": "Remote source URL. Supports shorthands:\n- `github:owner/repo@branch/path`\n- `codeberg:owner/repo@branch/path`\n- `gitlab:owner/repo@branch/path`\n- `gitea:owner/repo@branch/path` (requires settingsUpdater.giteaBaseUrl)\n- Any `https://` URL"
+              },
+              "file": {
+                "type": "string",
+                "description": "Local file path. Supports ~ for home directory. Mutually exclusive with url."
+              },
+              "parser": {
+                "type": "string",
+                "enum": ["jsonc-block", "jsonc-file"],
+                "description": "Parser for this source. Overrides settingsUpdater.defaultParser."
+              },
+              "targetKey": {
+                "type": "string",
+                "description": "Restrict this source to a single settings.json key. If omitted, all keys in the parsed object are applied."
+              },
+              "mergeStrategy": {
+                "type": "string",
+                "enum": ["replace", "merge-deep", "merge-shallow"],
+                "default": "replace",
+                "markdownDescription": "How to merge the source value with existing settings:\n- `replace`: completely replace the existing value\n- `merge-deep`: recursively merge objects, concatenate arrays\n- `merge-shallow`: merge top-level keys only, preserve existing sub-keys"
+              },
+              "updateInterval": {
+                "type": "number",
+                "description": "Override the global autoUpdateInterval for this source (minutes)."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src",
+    "test": "vitest run",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7",
+    "@typescript-eslint/parser": "^7",
+    "@vscode/vsce": "^3",
+    "eslint": "^9",
+    "prettier": "^3",
+    "typescript": "^5",
+    "vitest": "^2",
+    "esbuild": "^0.24"
+  },
+  "dependencies": {
+    "ofetch": "^1",
+    "jsonc-parser": "^3"
+  }
+}

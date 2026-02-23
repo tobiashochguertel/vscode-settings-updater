@@ -1,0 +1,7 @@
+{
+  // Personal settings overlay
+  "explorer.fileNesting.patterns": {
+    "mise.toml": ".mise.toml, *.mise.toml"
+  },
+  "editor.fontSize": 14
+}
