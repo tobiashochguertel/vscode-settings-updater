@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import type { ExtensionContext } from 'vscode'
+import { homedir } from 'node:os'
 import { getEnabledSources, getDefaultParser, getGlobalUpdateInterval } from './config'
 import { resolveUrl } from './sources/resolver'
 import { fetchRaw, hashContent } from './sources/fetcher'
@@ -9,6 +10,7 @@ import { applySource, countChanges } from './apply'
 import { log } from './logger'
 import { GLOBAL_STATE_INIT_KEY } from './constants'
 import { setUpdating, setIdle, setError } from './statusBar'
+import type { Source } from './sources/types'
 
 const pollingTimers: NodeJS.Timeout[] = []
 
@@ -50,7 +52,7 @@ export function stopPolling(): void {
 
 export async function fetchAndApplySource(
   ctx: ExtensionContext,
-  source: { name: string; url?: string; file?: string; parser?: any; mergeStrategy?: any; targetKey?: string; updateInterval?: number; enabled?: boolean },
+  source: Source,
   prompt: boolean,
 ): Promise<void> {
   try {
@@ -71,7 +73,7 @@ export async function fetchAndApplySource(
         return
       }
     } else if (source.file) {
-      const expanded = source.file.replace(/^~/, require('os').homedir())
+      const expanded = source.file.replace(/^~/, homedir())
       const uri = vscode.Uri.file(expanded)
       const bytes = await vscode.workspace.fs.readFile(uri)
       raw = new TextDecoder().decode(bytes)
@@ -87,6 +89,7 @@ export async function fetchAndApplySource(
 
     if (changeCount === 0) {
       log.info(`[${source.name}] Settings already up-to-date`)
+      setIdle()
       return
     }
 
