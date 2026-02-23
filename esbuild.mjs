@@ -9,6 +9,7 @@ const ctx = await esbuild.context({
   external: ['vscode'],
   format: 'cjs',
   platform: 'node',
+  mainFields: ['module', 'main'],
   sourcemap: true,
   minify: false,
 })
