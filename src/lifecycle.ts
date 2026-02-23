@@ -8,6 +8,7 @@ import { getSourceState, saveSourceState } from './state'
 import { applySource, countChanges } from './apply'
 import { log } from './logger'
 import { GLOBAL_STATE_INIT_KEY } from './constants'
+import { setUpdating, setIdle, setError } from './statusBar'
 
 const pollingTimers: NodeJS.Timeout[] = []
 
@@ -55,6 +56,7 @@ export async function fetchAndApplySource(
   try {
     let raw: string
     let contentHash: string
+    setUpdating(source.name)
 
     if (source.url) {
       const resolvedUrl = resolveUrl(source.url)
@@ -65,6 +67,7 @@ export async function fetchAndApplySource(
       if (contentHash === state.lastContentHash) {
         log.info(`[${source.name}] No change detected, skipping`)
         saveSourceState(ctx, source.name, { ...state, lastFetchAt: Date.now() })
+        setIdle()
         return
       }
     } else if (source.file) {
@@ -95,16 +98,19 @@ export async function fetchAndApplySource(
       )
       if (action !== 'Update') {
         log.info(`[${source.name}] User skipped update`)
+        setIdle()
         return
       }
     }
 
     const result = await applySource(ctx, source, parsed, contentHash)
     log.info(`[${source.name}] Applied: ${result.keysWritten.length} written, ${result.keysRemoved.length} removed`)
+    setIdle()
     vscode.window.showInformationMessage(`[Settings Updater] "${source.name}" updated successfully.`)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     log.error(`[${source.name}] Error: ${msg}`)
+    setError(msg)
     vscode.window.showWarningMessage(`[Settings Updater] "${source.name}" failed: ${msg}`)
   }
 }
