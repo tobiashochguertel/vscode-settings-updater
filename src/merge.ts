@@ -35,3 +35,10 @@ function mergeDeep(existing: unknown, incoming: unknown): unknown {
   }
   return result
 }
+
+// Strategy pattern implementations:
+export type { IMergeStrategy } from './strategies/IMergeStrategy'
+export { ReplaceStrategy } from './strategies/ReplaceStrategy'
+export { MergeShallowStrategy } from './strategies/MergeShallowStrategy'
+export { MergeDeepStrategy } from './strategies/MergeDeepStrategy'
+export { MergeStrategyRegistry } from './strategies/MergeStrategyRegistry'
