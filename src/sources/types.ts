@@ -13,9 +13,9 @@ export interface Source {
 }
 
 export interface SourceState {
-  lastFetchAt: number       // Unix timestamp ms; 0 if never fetched
-  lastContentHash: string   // SHA-256 hex of last fetched raw content; '' if never
-  appliedKeys: string[]     // settings.json keys written by this source
+  lastFetchAt: number // Unix timestamp ms; 0 if never fetched
+  lastContentHash: string // SHA-256 hex of last fetched raw content; '' if never
+  appliedKeys: string[] // settings.json keys written by this source
 }
 
 export type ParsedSettings = Record<string, unknown>

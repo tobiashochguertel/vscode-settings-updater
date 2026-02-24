@@ -14,10 +14,7 @@ export interface Services {
 }
 
 export function createProductionServices(ctx: ExtensionContext): Services {
-  const readers: ISourceReader[] = [
-    new RemoteSourceReader(),
-    new LocalFileSourceReader(),
-  ]
+  const readers: ISourceReader[] = [new RemoteSourceReader(), new LocalFileSourceReader()]
   const parsers = new ParserRegistry()
   const mergeStrategies = new MergeStrategyRegistry()
   const orchestrator = new UpdateOrchestrator(readers, parsers, mergeStrategies, ctx)
@@ -30,7 +27,7 @@ export function createTestServices(
     readers: ISourceReader[]
     parsers: ParserRegistry
     mergeStrategies: MergeStrategyRegistry
-  }> = {}
+  }> = {},
 ): Services {
   const readers = overrides.readers ?? [new RemoteSourceReader(), new LocalFileSourceReader()]
   const parsers = overrides.parsers ?? new ParserRegistry()

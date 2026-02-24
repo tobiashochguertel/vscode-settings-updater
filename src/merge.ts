@@ -1,10 +1,6 @@
 import type { MergeStrategy } from './sources/types'
 
-export function applyMerge(
-  existing: unknown,
-  incoming: unknown,
-  strategy: MergeStrategy,
-): unknown {
+export function applyMerge(existing: unknown, incoming: unknown, strategy: MergeStrategy): unknown {
   switch (strategy) {
     case 'replace':
       return incoming

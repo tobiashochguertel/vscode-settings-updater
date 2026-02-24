@@ -28,7 +28,7 @@ export function registerCommands(ctx: ExtensionContext): void {
         vscode.window.showInformationMessage('[Settings Updater] No enabled sources configured.')
         return
       }
-      const items = sources.map(s => ({
+      const items = sources.map((s) => ({
         label: s.name,
         description: s.url ?? s.file ?? '',
         source: s,
@@ -48,7 +48,7 @@ export function registerCommands(ctx: ExtensionContext): void {
         vscode.window.showInformationMessage('[Settings Updater] No enabled sources to disable.')
         return
       }
-      const items = sources.map(s => ({
+      const items = sources.map((s) => ({
         label: s.name,
         description: s.url ?? s.file ?? '',
         source: s,
@@ -67,12 +67,12 @@ export function registerCommands(ctx: ExtensionContext): void {
     // ---- enableSource ----
     vscode.commands.registerCommand('settingsUpdater.enableSource', async () => {
       const allSources = getConfig<Source[]>(`${CONFIG_NAMESPACE}.sources`) ?? []
-      const disabledSources = allSources.filter(s => s.enabled === false)
+      const disabledSources = allSources.filter((s) => s.enabled === false)
       if (disabledSources.length === 0) {
         vscode.window.showInformationMessage('[Settings Updater] No disabled sources found.')
         return
       }
-      const items = disabledSources.map(s => ({
+      const items = disabledSources.map((s) => ({
         label: s.name,
         description: s.url ?? s.file ?? '',
         source: s,
@@ -97,7 +97,7 @@ export function registerCommands(ctx: ExtensionContext): void {
     vscode.commands.registerCommand('settingsUpdater.openConfig', async () => {
       await vscode.commands.executeCommand('workbench.action.openSettingsJson')
       // Give VS Code a moment to open the document before trying to reveal
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await new Promise((resolve) => setTimeout(resolve, 200))
       const editor = vscode.window.activeTextEditor
       if (!editor) return
       const text = editor.document.getText()
@@ -129,24 +129,24 @@ export function registerCommands(ctx: ExtensionContext): void {
 // ---------------------------------------------------------------------------
 
 function buildStatusHtml(ctx: ExtensionContext, sources: Source[]): string {
-  const rows = sources.map(s => {
-    const enabled = s.enabled !== false
-    const state = getSourceState(ctx, s.name)
-    const lastChecked = state.lastFetchAt
-      ? new Date(state.lastFetchAt).toLocaleString()
-      : 'never'
-    const keysManaged = state.appliedKeys.length
-    const icon = !enabled ? '⏸' : keysManaged > 0 ? '✅' : '⬜'
-    const status = !enabled ? 'disabled' : keysManaged > 0 ? 'active' : 'pending'
-    const sourceRef = s.url ?? s.file ?? 'unknown'
-    return `<tr>
+  const rows = sources
+    .map((s) => {
+      const enabled = s.enabled !== false
+      const state = getSourceState(ctx, s.name)
+      const lastChecked = state.lastFetchAt ? new Date(state.lastFetchAt).toLocaleString() : 'never'
+      const keysManaged = state.appliedKeys.length
+      const icon = !enabled ? '⏸' : keysManaged > 0 ? '✅' : '⬜'
+      const status = !enabled ? 'disabled' : keysManaged > 0 ? 'active' : 'pending'
+      const sourceRef = s.url ?? s.file ?? 'unknown'
+      return `<tr>
       <td>${icon} ${escHtml(s.name)}</td>
       <td>${escHtml(status)}</td>
       <td>${escHtml(lastChecked)}</td>
       <td>${keysManaged}</td>
       <td><code>${escHtml(sourceRef)}</code></td>
     </tr>`
-  }).join('\n')
+    })
+    .join('\n')
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -184,7 +184,11 @@ function buildStatusHtml(ctx: ExtensionContext, sources: Source[]): string {
 }
 
 function escHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 // ---------------------------------------------------------------------------
@@ -194,8 +198,6 @@ function escHtml(str: string): string {
 async function setSourceEnabled(sourceName: string, enabled: boolean): Promise<void> {
   const config = vscode.workspace.getConfiguration()
   const sources = config.get<Source[]>(`${CONFIG_NAMESPACE}.sources`) ?? []
-  const updated = sources.map(s =>
-    s.name === sourceName ? { ...s, enabled } : s,
-  )
+  const updated = sources.map((s) => (s.name === sourceName ? { ...s, enabled } : s))
   await config.update(`${CONFIG_NAMESPACE}.sources`, updated, vscode.ConfigurationTarget.Global)
 }

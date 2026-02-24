@@ -13,7 +13,11 @@ export function getSourceState(ctx: ExtensionContext, sourceName: string): Sourc
   return readStateMap(ctx)[sourceName] ?? defaultSourceState()
 }
 
-export function saveSourceState(ctx: ExtensionContext, sourceName: string, state: SourceState): void {
+export function saveSourceState(
+  ctx: ExtensionContext,
+  sourceName: string,
+  state: SourceState,
+): void {
   const map = readStateMap(ctx)
   map[sourceName] = state
   ctx.globalState.update(GLOBAL_STATE_SOURCES_KEY, map)

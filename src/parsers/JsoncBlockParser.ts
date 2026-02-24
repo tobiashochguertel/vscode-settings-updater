@@ -1,4 +1,5 @@
 import { parse as parseJsonc } from 'jsonc-parser'
+import type { ParseError } from 'jsonc-parser'
 import type { IParser } from './IParser'
 import type { ParsedSettings } from '../sources/types'
 
@@ -14,7 +15,7 @@ export class JsoncBlockParser implements IParser {
     const block = match[1]
     // The block is a settings snippet without outer braces — wrap it
     const wrapped = `{${block}}`
-    const errors: any[] = []
+    const errors: ParseError[] = []
     const result = parseJsonc(wrapped, errors, { allowTrailingComma: true })
     if (errors.length > 0 || typeof result !== 'object') return {}
     return result as ParsedSettings

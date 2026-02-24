@@ -34,6 +34,11 @@ tasks:
     cmds:
       - pnpm test
 
+  test:e2e:
+    desc: "Run E2E tests in VS Code Extension Host (requires display / xvfb)"
+    cmds:
+      - pnpm test:e2e
+
   package:
     desc: "Create .vsix package"
     cmds:

@@ -8,7 +8,7 @@ export function getConfig<T>(key: string): T | undefined {
 
 export function getEnabledSources(): Source[] {
   const sources = getConfig<Source[]>(`${CONFIG_NAMESPACE}.sources`) ?? []
-  return sources.filter(s => s.enabled !== false)
+  return sources.filter((s) => s.enabled !== false)
 }
 
 export function getDefaultParser(): ParserType {
@@ -16,7 +16,9 @@ export function getDefaultParser(): ParserType {
 }
 
 export function getGlobalUpdateInterval(): number {
-  return getConfig<number>(`${CONFIG_NAMESPACE}.autoUpdateInterval`) ?? DEFAULT_UPDATE_INTERVAL_MINUTES
+  return (
+    getConfig<number>(`${CONFIG_NAMESPACE}.autoUpdateInterval`) ?? DEFAULT_UPDATE_INTERVAL_MINUTES
+  )
 }
 
 export function getGiteaBaseUrl(): string {

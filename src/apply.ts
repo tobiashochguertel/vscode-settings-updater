@@ -3,7 +3,6 @@ import type { ExtensionContext } from 'vscode'
 import type { Source, ParsedSettings } from './sources/types'
 import { applyMerge } from './merge'
 import { getSourceState, saveSourceState, isKeyOwnedByAnotherSource } from './state'
-import { getDefaultParser } from './config'
 import { log } from './logger'
 
 export interface ApplyResult {
@@ -37,7 +36,7 @@ export async function applySource(
 
   // Clean up keys removed from this source
   const keysRemoved: string[] = []
-  const removed = state.appliedKeys.filter(k => !keysWritten.includes(k))
+  const removed = state.appliedKeys.filter((k) => !keysWritten.includes(k))
   for (const key of removed) {
     if (!isKeyOwnedByAnotherSource(ctx, key, source.name)) {
       await config.update(key, undefined, vscode.ConfigurationTarget.Global)
@@ -75,6 +74,6 @@ export function countChanges(
     if (JSON.stringify(existing) !== JSON.stringify(merged)) count++
   }
   // Removed keys
-  count += state.appliedKeys.filter(k => !Object.keys(keysToWrite).includes(k)).length
+  count += state.appliedKeys.filter((k) => !Object.keys(keysToWrite).includes(k)).length
   return count
 }

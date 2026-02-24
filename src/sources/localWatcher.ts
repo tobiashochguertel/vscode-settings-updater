@@ -13,7 +13,7 @@ const watchers: vscode.FileSystemWatcher[] = []
  * On file delete: log warning, keep previously applied settings (safety).
  */
 export function startLocalWatchers(ctx: ExtensionContext): void {
-  const localSources = getEnabledSources().filter(s => s.file)
+  const localSources = getEnabledSources().filter((s) => s.file)
   for (const source of localSources) {
     const expanded = resolveFilePath(source.file!)
     // Use the exact file path as glob pattern for a single-file watcher
@@ -35,7 +35,9 @@ export function startLocalWatchers(ctx: ExtensionContext): void {
     })
 
     watcher.onDidDelete(() => {
-      log.warn(`[${source.name}] Local file deleted: ${expanded} — previously applied settings kept`)
+      log.warn(
+        `[${source.name}] Local file deleted: ${expanded} — previously applied settings kept`,
+      )
       vscode.window.showWarningMessage(
         `[Settings Updater] Source "${source.name}": file was deleted. Previously applied settings have been kept.`,
       )

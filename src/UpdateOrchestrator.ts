@@ -24,7 +24,7 @@ export class UpdateOrchestrator {
       setUpdating(source.name)
 
       // 1. Find reader
-      const reader = this.readers.find(r => r.canHandle(source))
+      const reader = this.readers.find((r) => r.canHandle(source))
       if (!reader) {
         log.warn(`[${source.name}] Source has neither url nor file — skipping`)
         setIdle()
@@ -35,7 +35,7 @@ export class UpdateOrchestrator {
       let raw: string
       try {
         raw = await reader.read(source)
-      } catch (err: any) {
+      } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err)
         log.error(`[${source.name}] Error: ${msg}`)
         setError(msg)
@@ -83,9 +83,13 @@ export class UpdateOrchestrator {
 
       // 7. Apply
       const result = await applySource(this.ctx, source, parsed, contentHash)
-      log.info(`[${source.name}] Applied: ${result.keysWritten.length} written, ${result.keysRemoved.length} removed`)
+      log.info(
+        `[${source.name}] Applied: ${result.keysWritten.length} written, ${result.keysRemoved.length} removed`,
+      )
       setIdle()
-      vscode.window.showInformationMessage(`[Settings Updater] "${source.name}" updated successfully.`)
+      vscode.window.showInformationMessage(
+        `[Settings Updater] "${source.name}" updated successfully.`,
+      )
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       log.error(`[${source.name}] Error: ${msg}`)

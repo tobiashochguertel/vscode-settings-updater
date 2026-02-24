@@ -1,4 +1,5 @@
 import { parse as parseJsonc } from 'jsonc-parser'
+import type { ParseError } from 'jsonc-parser'
 import type { IParser } from './IParser'
 import type { ParsedSettings } from '../sources/types'
 
@@ -8,7 +9,7 @@ export class JsoncFileParser implements IParser {
   }
 
   parse(content: string): ParsedSettings {
-    const errors: any[] = []
+    const errors: ParseError[] = []
     const result = parseJsonc(content, errors, { allowTrailingComma: true })
     if (errors.length > 0 || typeof result !== 'object') return {}
     return result as ParsedSettings

@@ -23,10 +23,11 @@ export function resolveUrl(url: string): string {
   const atIdx = rest.indexOf('@')
   if (atIdx === -1) throw new Error(`Invalid source URL (missing @branch): ${url}`)
 
-  const repoPath = rest.slice(0, atIdx)          // owner/repo
-  const branchAndFile = rest.slice(atIdx + 1)    // branch/path/to/file
+  const repoPath = rest.slice(0, atIdx) // owner/repo
+  const branchAndFile = rest.slice(atIdx + 1) // branch/path/to/file
   const slashIdx = branchAndFile.indexOf('/')
-  if (slashIdx === -1) throw new Error(`Invalid source URL (missing file path after branch): ${url}`)
+  if (slashIdx === -1)
+    throw new Error(`Invalid source URL (missing file path after branch): ${url}`)
 
   const branch = branchAndFile.slice(0, slashIdx)
   const filePath = branchAndFile.slice(slashIdx + 1)
@@ -45,6 +46,8 @@ export function resolveUrl(url: string): string {
       return `${base}/${owner}/${repo}/raw/branch/${branch}/${filePath}`
     }
     default:
-      throw new Error(`Unknown URL host shorthand: ${host}. Use github, codeberg, gitlab, gitea, or a full https:// URL.`)
+      throw new Error(
+        `Unknown URL host shorthand: ${host}. Use github, codeberg, gitlab, gitea, or a full https:// URL.`,
+      )
   }
 }

@@ -11,7 +11,7 @@ export class ParserRegistry {
   }
 
   parse(content: string, parserType: string): ParsedSettings {
-    const parser = this.parsers.find(p => p.canHandle(parserType))
+    const parser = this.parsers.find((p) => p.canHandle(parserType))
     if (!parser) {
       // Fallback to jsonc-block for unknown types
       return new JsoncBlockParser().parse(content)

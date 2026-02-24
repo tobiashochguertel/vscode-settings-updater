@@ -1,10 +1,8 @@
-import * as vscode from 'vscode'
 import type { ExtensionContext } from 'vscode'
 import { getEnabledSources, getGlobalUpdateInterval } from './config'
-import { getSourceState, saveSourceState } from './state'
+import { getSourceState } from './state'
 import { log } from './logger'
 import { GLOBAL_STATE_INIT_KEY } from './constants'
-import { setIdle } from './statusBar'
 import type { Source } from './sources/types'
 import { createProductionServices } from './ServiceContainer'
 
@@ -23,7 +21,7 @@ export async function runStartupCheck(ctx: ExtensionContext): Promise<void> {
   }
 
   for (const source of getEnabledSources()) {
-    if (source.file) continue  // handled by file watcher
+    if (source.file) continue // handled by file watcher
     const state = getSourceState(ctx, source.name)
     const intervalMs = (source.updateInterval ?? getGlobalUpdateInterval()) * 60_000
     if (Date.now() - state.lastFetchAt >= intervalMs) {
@@ -33,7 +31,7 @@ export async function runStartupCheck(ctx: ExtensionContext): Promise<void> {
 }
 
 export function startPolling(ctx: ExtensionContext): void {
-  const sources = getEnabledSources().filter(s => s.url)
+  const sources = getEnabledSources().filter((s) => s.url)
   for (const source of sources) {
     const intervalMs = (source.updateInterval ?? getGlobalUpdateInterval()) * 60_000
     const timer = setInterval(() => fetchAndApplySource(ctx, source, true), intervalMs)
