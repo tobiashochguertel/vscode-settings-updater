@@ -156,8 +156,8 @@
     "format": "prettier --write src",
     "test": "vitest run",
     "test:e2e": "tsc -p tsconfig.test.json && node ./out/test/runTests.js",
-    "package": "vsce package",
-    "publish": "vsce publish",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies",
     "test:e2e:watch": "tsc -p tsconfig.test.json --watch"
   },
   "devDependencies": {
