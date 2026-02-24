@@ -44,6 +44,17 @@ tasks:
     cmds:
       - pnpm package
 
+  check-size:
+    desc: "Traffic-light VSIX size check (🟢 ≤10% / 🟡 10-50% / 🔴 >50% → fail)"
+    cmds:
+      - node scripts/check-package-size.mjs
+
+  update-size-baseline:
+    desc: "Update the VSIX size baseline after an intentional size change"
+    cmds:
+      - task: package
+      - node scripts/check-package-size.mjs --update
+
   install-local:
     desc: "Install .vsix into local VS Code"
     cmds:

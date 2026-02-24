@@ -34,7 +34,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": ["*"],
   "main": "./dist/index.js",
   "contributes": {
     "commands": [
