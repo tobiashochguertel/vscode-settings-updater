@@ -5,6 +5,7 @@ import { applyMerge } from './merge'
 import { getSourceState, saveSourceState, isKeyOwnedByAnotherSource } from './state'
 import { log } from './logger'
 import { backupSettingsJson, rollbackSettingsJson, RollbackPerformedError } from './backup'
+import { validateSettingsJson } from './validate'
 
 export interface ApplyResult {
   keysWritten: string[]
@@ -50,7 +51,20 @@ export async function applySource(
       }
     }
 
-    // Persist updated state
+    // Post-write JSONC validation — VS Code's config API preserves comments via
+    // jsonc-parser modify()+applyEdits(), but we verify no syntax errors crept in.
+    const validation = validateSettingsJson(ctx)
+    if (!validation.valid) {
+      log.error(`[${source.name}] Post-write JSONC validation failed — rolling back`)
+      if (backupPath) {
+        await rollbackSettingsJson(ctx, backupPath)
+        throw new RollbackPerformedError('Post-write JSONC validation failed', backupPath)
+      }
+      throw new Error('Post-write JSONC validation failed — no backup available to restore')
+    }
+    log.info(`[${source.name}] Post-write JSONC validation passed`)
+
+    // Persist updated state only after successful validation
     saveSourceState(ctx, source.name, {
       lastFetchAt: Date.now(),
       lastContentHash: contentHash,
@@ -59,6 +73,9 @@ export async function applySource(
 
     return { keysWritten, keysRemoved }
   } catch (err) {
+    // Re-throw RollbackPerformedError without double-rollback
+    if (err instanceof RollbackPerformedError) throw err
+
     const msg = err instanceof Error ? err.message : String(err)
     log.error(`[${source.name}] Write failed: ${msg}`)
 
