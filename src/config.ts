@@ -21,6 +21,10 @@ export function getGlobalUpdateInterval(): number {
   )
 }
 
+export function getBackupLimit(): number {
+  return getConfig<number>(`${CONFIG_NAMESPACE}.backupLimit`) ?? 100
+}
+
 export function getGiteaBaseUrl(): string {
   return getConfig<string>(`${CONFIG_NAMESPACE}.giteaBaseUrl`) ?? ''
 }

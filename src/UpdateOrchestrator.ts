@@ -10,6 +10,7 @@ import { getDefaultParser } from './config'
 import { hashContent } from './sources/fetcher'
 import { log } from './logger'
 import { setUpdating, setIdle, setError } from './statusBar'
+import { RollbackPerformedError } from './backup'
 
 export class UpdateOrchestrator {
   constructor(
@@ -91,10 +92,25 @@ export class UpdateOrchestrator {
         `[Settings Updater] "${source.name}" updated successfully.`,
       )
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      log.error(`[${source.name}] Error: ${msg}`)
-      setError(msg)
-      vscode.window.showWarningMessage(`[Settings Updater] "${source.name}" failed: ${msg}`)
+      setError(e instanceof Error ? e.message : String(e))
+      if (e instanceof RollbackPerformedError) {
+        log.error(
+          `[${source.name}] Update failed — settings.json automatically rolled back: ${e.originalMessage}`,
+        )
+        log.info(`[${source.name}] Restored from: ${e.backupPath}`)
+        vscode.window
+          .showWarningMessage(
+            `[Settings Updater] "${source.name}" update failed — settings.json has been automatically rolled back.`,
+            'Show Log',
+          )
+          .then((choice) => {
+            if (choice === 'Show Log') log.show()
+          })
+      } else {
+        const msg = e instanceof Error ? e.message : String(e)
+        log.error(`[${source.name}] Error: ${msg}`)
+        vscode.window.showWarningMessage(`[Settings Updater] "${source.name}" failed: ${msg}`)
+      }
     }
   }
 }

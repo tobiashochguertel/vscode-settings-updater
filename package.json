@@ -97,6 +97,13 @@
           "default": "",
           "description": "Base URL for self-hosted Gitea/Forgejo instances. Required when using gitea: URL shorthand. Example: https://mygitea.example.com"
         },
+        "settingsUpdater.backupLimit": {
+          "type": "number",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Maximum number of settings.json backups to keep. Oldest backups are pruned automatically. Default: 100."
+        },
         "settingsUpdater.sources": {
           "type": "array",
           "default": [],
