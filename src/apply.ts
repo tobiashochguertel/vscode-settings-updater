@@ -4,6 +4,7 @@ import type { Source, ParsedSettings } from './sources/types'
 import { applyMerge } from './merge'
 import { getSourceState, saveSourceState, isKeyOwnedByAnotherSource } from './state'
 import { log } from './logger'
+import { backupSettingsJson } from './backup'
 
 export interface ApplyResult {
   keysWritten: string[]
@@ -19,6 +20,9 @@ export async function applySource(
   const config = vscode.workspace.getConfiguration()
   const strategy = source.mergeStrategy ?? 'replace'
   const state = getSourceState(ctx, source.name)
+
+  // Backup settings.json before making any changes
+  await backupSettingsJson(ctx)
 
   // Determine which keys to write
   const keysToWrite: ParsedSettings = source.targetKey

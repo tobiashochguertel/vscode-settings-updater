@@ -4,6 +4,15 @@
   "description": "Sync settings.json keys from local jsonc files or Git repos, with configurable merge strategies",
   "version": "0.1.0",
   "publisher": "tobiashochguertel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tobiashochguertel/vscode-settings-updater.git"
+  },
+  "homepage": "https://github.com/tobiashochguertel/vscode-settings-updater#readme",
+  "bugs": {
+    "url": "https://github.com/tobiashochguertel/vscode-settings-updater/issues"
+  },
   "preview": true,
   "private": true,
   "engines": {
@@ -25,9 +34,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "*"
-  ],
+  "activationEvents": ["onStartupFinished"],
   "main": "./dist/index.js",
   "contributes": {
     "commands": [
